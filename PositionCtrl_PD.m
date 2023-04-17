@@ -1,5 +1,6 @@
-%worked!
-dt= 0.05;
+%Position control with PD controller
+%First, run loadRobotmodel1.m 
+ 
 q0 = startConfiguration;
 dq = [0;0;0;0;0;0;0];
 tau = [0;0;0;0;0;0;0;];
@@ -8,11 +9,11 @@ x0 = [q0;dq];
 [t,x] = ode78(@(t,x) lbr14EoM(t,x,lbr14),[0 2],x0);
 plot(t,x(:,1),'b',t,x(:,2),'r',t,x(:,3),'g',t,x(:,4),'y');
 %%
-% load saved data ' x values ...'
+% load saved data ' x values ...' and run this section to chech the results
 plot(t,x(:,1),'b',t,x(:,2),'r',t,x(:,3),'g',t,x(:,4),'y');
 
-lbr14.gravityTorque()
-lbr14.homeConfiguration
+%%lbr14.gravityTorque()
+%%lbr14.homeConfiguration
 %% function
 function dx = lbr14EoM(t,x,robot)
 Kd = eye(7,7)*50;
