@@ -54,6 +54,7 @@ title('Final Configuration of Robot');
 function dx = lbr14EoM(t,x,robot,qTr,dqTr,ddqTr)
 KD = eye(7,7)*50;
 KP = eye(7,7) *50;
+
 timeIndex = uint16(ceil(t*100))+1;
 qd = [qTr(1,timeIndex); qTr(2,timeIndex); qTr(3,timeIndex); qTr(4,timeIndex); qTr(5,timeIndex) ;qTr(6,timeIndex) ;qTr(7,timeIndex)];
 dqd = [dqTr(1,timeIndex); dqTr(2,timeIndex); dqTr(3,timeIndex); dqTr(4,timeIndex); dqTr(5,timeIndex) ;dqTr(6,timeIndex) ;dqTr(7,timeIndex)];
