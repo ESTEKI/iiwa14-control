@@ -46,7 +46,7 @@ tf = 2; %final time
     % work. maximum torques are located in iiwa-brochure.pdf
     lbrMaximumTorques =[320 320 176 176 110 40 40];
 
-    
+    sim.simxSetJointPosition(clientID,lbrJointHandles(4),0,sim.simx_opmode_blocking);
     lbrJointPositions_Prev = zeros(7,1);
     lbrJointPosition = lbrJointPositions_Prev;
     lbrJointVelocity = zeros(7,1);
@@ -82,7 +82,9 @@ tf = 2; %final time
     end
                   
       % Trajectory 
-      qdesired = [0; 20*pi/180.0; 0; 45*pi/180.0; 0 ;0 ;0];
+      %qdesired = [0; 20*pi/180.0; 0; 45*pi/180.0; 0 ;0 ;0];
+      qdesired = [0.0 ;20.0; 0 ;-110.0; 0 ;-40.0; 90.0;]*pi/180;
+
       [qTr, dqTr, ddqTr, ppTr] = jointSpaceTrajectory(lbrJointPositions_Prev,qdesired,0,2);
 lbrJointPositions_Prev*180/pi
         try
@@ -100,7 +102,7 @@ lbrJointPositions_Prev*180/pi
 
           lbrJointVelocity = (lbrJointPosition-lbrJointPositions_Prev)/dt;
           lbrJointAccel = (lbrJointVelocity-lbrJointVelocity_prev)/dt;
-            KP = eye(7,7)*150;
+            KP = eye(7,7)*20;
             KD = eye(7,7) *10;
             %qd = [0; 20*pi/180.0; 0; 45*pi/180.0; 0 ;0 ;0];
             %qdesired = [0.0 ;20.0; 0 ;-110.0; 0 ;-40.0; 90.0;]*pi/180;
@@ -109,7 +111,7 @@ lbrJointPositions_Prev*180/pi
             %PD controller
             %u = KP*qtilda - KD*lbrJointVelocity + lbr14.gravityTorque(lbrJointPosition);
             
-            aq =ddqd+ KP*qtilda + KD*dqtilda ;
+            aq =0+ KP*qtilda + KD*dqtilda ;
             u = lbr14.massMatrix(lbrJointPosition)*aq+ lbr14.velocityProduct(lbrJointPosition,lbrJointVelocity) + lbr14.gravityTorque(lbrJointPosition); %velocityProduct = C(q,dq)*dq
 
           q(:,step) = lbrJointPosition;
@@ -137,6 +139,7 @@ lbrJointPositions_Prev*180/pi
             cprintf('Error','Error in main loop: %s \r\n', ME.message);%better not to use cprintf anymore!
             pause(0.1);
         end
+            pause(10);
 
         % stop the simulation:
         sim.simxStopSimulation(clientID,sim.simx_opmode_blocking);
