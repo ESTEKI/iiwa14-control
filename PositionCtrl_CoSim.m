@@ -1,6 +1,7 @@
 % % S. Esteki:
 % This program connects to 'LBRiiwa14_TorqueCtrlMode.ttt' Copelliasim model
-% 
+% Run 'loadRobotmodel1.m' first
+
 % using the remote API synchronous mode. The synchronous mode needs to be
 % pre-enabled on the server side. You would do this by
 % starting the server (e.g. in a child script) with:
@@ -85,8 +86,8 @@ tf = 2; %final time
       %qdesired = [0; 20*pi/180.0; 0; 45*pi/180.0; 0 ;0 ;0];
       qdesired = [0.0 ;20.0; 0 ;-110.0; 0 ;-40.0; 90.0;]*pi/180;
 
-      [qTr, dqTr, ddqTr, ppTr] = jointSpaceTrajectory(lbrJointPositions_Prev,qdesired,0,2);
-lbrJointPositions_Prev*180/pi
+      [qTr, dqTr, ddqTr, ppTr,tvec] = jointSpaceTrajectory(lbrJointPositions_Prev,qdesired,0,tf);
+
         try
         % MAIN LOOP:
         NumStep = tf/dt;
@@ -102,17 +103,17 @@ lbrJointPositions_Prev*180/pi
 
           lbrJointVelocity = (lbrJointPosition-lbrJointPositions_Prev)/dt;
           lbrJointAccel = (lbrJointVelocity-lbrJointVelocity_prev)/dt;
-            KP = eye(7,7)*20;
-            KD = eye(7,7) *10;
+            KP = eye(7,7)*100;
+            KD = eye(7,7) *50;
             %qd = [0; 20*pi/180.0; 0; 45*pi/180.0; 0 ;0 ;0];
             %qdesired = [0.0 ;20.0; 0 ;-110.0; 0 ;-40.0; 90.0;]*pi/180;
             qtilda = qd - lbrJointPosition;
             dqtilda = dqd - lbrJointVelocity;
             %PD controller
-            %u = KP*qtilda - KD*lbrJointVelocity + lbr14.gravityTorque(lbrJointPosition);
-            
-            aq =0+ KP*qtilda + KD*dqtilda ;
-            u = lbr14.massMatrix(lbrJointPosition)*aq+ lbr14.velocityProduct(lbrJointPosition,lbrJointVelocity) + lbr14.gravityTorque(lbrJointPosition); %velocityProduct = C(q,dq)*dq
+             %u = KP*qtilda - KD*lbrJointVelocity + lbr14.gravityTorque(lbrJointPosition);
+            % Inv. Dyn. controller
+              aq =ddqd+ KP*qtilda + KD*dqtilda ;
+              u = lbr14.massMatrix(lbrJointPosition)*aq+ lbr14.velocityProduct(lbrJointPosition,lbrJointVelocity) + lbr14.gravityTorque(lbrJointPosition); %velocityProduct = C(q,dq)*dq
 
           q(:,step) = lbrJointPosition;
           dq(:,step) = lbrJointVelocity;

@@ -1,3 +1,5 @@
+% Building  a rigidBodytree from MDH table in 'sturz 2017' paper, But this
+% model is never used in any files in this project 
 %mdh : [a alpha d theta]
 mdhparams = [0 0 0 0;
             0 pi/2 0 0;
