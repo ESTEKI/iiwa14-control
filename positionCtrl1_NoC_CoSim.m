@@ -1,5 +1,5 @@
 % % S. Esteki:
-% This program connects to 'No Control_sc1' Copelliasim model
+% This program connects to 'LBRiiwa14_TorqueCtrlMode.ttt' Copelliasim model
 % 
 % using the remote API synchronous mode. The synchronous mode needs to be
 % pre-enabled on the server side. You would do this by
@@ -42,7 +42,7 @@ numOfIterations = 50;
                                                                                                 
     % [ returnCode,lbrJoint1]=sim.simxGetObjectHandle( clientID,'./LBRiiwa14R820/joint1',sim.simx_opmode_blocking);
     % Torque limits must be set by the program unless setting target force wont
-    % work. maximum torques are located in iiwa-brochure.pdf
+    % work. maximum torques are from iiwa-brochure.pdf
     lbrMaximumTorques =[320 320 176 176 110 40 40];
     lbrJointPositions_Prev = zeros(7,1);
     lbrJointPosition = lbrJointPositions_Prev;
@@ -84,7 +84,7 @@ numOfIterations = 50;
           ddq(:,i) = lbrJointAccel;
           pause(dt);
           lbrJointPositions_Prev = lbrJointPosition;
-          lbrJointVelocity_prev = lbrJointPosition;
+          lbrJointVelocity_prev = lbrJointVelocity;
          %   [ returnCode2]= sim.simxSetJointForce(clientID,lbrJointHandles(7),20,sim.simx_opmode_oneshot);
         end
         %END MAIN LOOP
@@ -103,14 +103,24 @@ numOfIterations = 50;
     end
     sim.delete(); % call the destructor!
     
+close all;
 
 hold on 
-figure;
 for l = 1:7
-plot()
+plot(q(l,:));
 end
 
+figure;
+hold on
+for l = 1:7
+plot(dq(l,:));
+end
 
+figure;
+hold on
+for l = 1:7
+plot(ddq(l,:));
+end
 
 
     disp('Program ended');
