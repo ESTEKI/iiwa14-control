@@ -111,9 +111,26 @@ tf = 2; %final time
             dqtilda = dqd - lbrJointVelocity;
             %PD controller
              %u = KP*qtilda - KD*lbrJointVelocity + lbr14.gravityTorque(lbrJointPosition);
+
             % Inv. Dyn. controller
-              aq =ddqd+ KP*qtilda + KD*dqtilda ;
-              u = lbr14.massMatrix(lbrJointPosition)*aq+ lbr14.velocityProduct(lbrJointPosition,lbrJointVelocity) + lbr14.gravityTorque(lbrJointPosition); %velocityProduct = C(q,dq)*dq
+             %aq =ddqd + KP*qtilda + KD*dqtilda ;
+             %u = lbr14.massMatrix(lbrJointPosition)*aq+ lbr14.velocityProduct(lbrJointPosition,lbrJointVelocity) + lbr14.gravityTorque(lbrJointPosition); %velocityProduct = C(q,dq)*dq
+            
+            % Robust Inv. Dyn.
+             % Run P_calculate.m once before using RID  
+              ro = 0.2;
+              epsilon = 0.02;
+              error = [qtilda; dqtilda];
+              BPe = B'*P*error;
+              normBPe = norm(BPe);
+
+              if normBPe > epsilon
+                da = -ro.*BPe/normBPe;
+              else
+                da = -ro/ epsilon * BPe;
+              end
+              aq =ddqd+ KP*qtilda + KD*dqtilda + da ;
+              u = lbr14.massMatrix(lbrJointPosition)*aq+ lbr14.velocityProduct(lbrJointPosition,lbrJointVelocity) + lbr14.gravityTorque(lbrJointPosition); 
 
           q(:,step) = lbrJointPosition;
           dq(:,step) = lbrJointVelocity;

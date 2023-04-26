@@ -1,4 +1,4 @@
-%Position control with Inverse dynamic controller
+%Position control with PD,Inverse dynamic, Robust controller
 %First, run loadRobotmodel1.m to initiate robot model.
 
 close all
@@ -34,7 +34,7 @@ hold off
 figure;
 %% ODE simulation
 x0 = [q0;dq];
-[t,x] = ode45(@(t,x) lbr14EoM(t,x,lbr14,qTr,dqTr,ddqTr),[0 tf],x0);
+[t,x] = ode45(@(t,x) lbr14EoM(t,x,lbr14,qTr,dqTr,ddqTr,P),[0 tf],x0);
 plot(t,x(:,1:7));
 legend;
 title('Simulation result for tracking in each joint');
@@ -51,21 +51,41 @@ title('Final Configuration of Robot');
 %  show(lbr14,x(ii,1:7)');
 % end
 %% function
-function dx = lbr14EoM(t,x,robot,qTr,dqTr,ddqTr)
+function dx = lbr14EoM(t,x,robot,qTr,dqTr,ddqTr,P)
 KD = eye(7,7)*50;
 KP = eye(7,7) *50;
 
 timeIndex = uint16(ceil(t*100))+1;
+% qdesired dqdesired ...
 qd = [qTr(1,timeIndex); qTr(2,timeIndex); qTr(3,timeIndex); qTr(4,timeIndex); qTr(5,timeIndex) ;qTr(6,timeIndex) ;qTr(7,timeIndex)];
 dqd = [dqTr(1,timeIndex); dqTr(2,timeIndex); dqTr(3,timeIndex); dqTr(4,timeIndex); dqTr(5,timeIndex) ;dqTr(6,timeIndex) ;dqTr(7,timeIndex)];
 ddqd =  [ddqTr(1,timeIndex); ddqTr(2,timeIndex); ddqTr(3,timeIndex); ddqTr(4,timeIndex); ddqTr(5,timeIndex) ;ddqTr(6,timeIndex) ;ddqTr(7,timeIndex)];
 
 qtilda = qd - x(1:7);
 dqtilda = dqd - x(8:14);
+%PD 
 %u = Kp*qtilda - Kd*x(8:14) + robot.gravityTorque(x(1:7)); %PD controller
 
-aq =ddqd+ KP*qtilda + KD*dqtilda ;
-u = robot.massMatrix(x(1:7))*aq+ robot.velocityProduct(x(1:7),x(8:14)) + robot.gravityTorque(x(1:7)); %velocityProduct = C(q,dq)*dq
+%Inv Dyn
+% aq = ddqd + KP*qtilda + KD*dqtilda ;
+% u = robot.massMatrix(x(1:7))*aq+ robot.velocityProduct(x(1:7),x(8:14)) + robot.gravityTorque(x(1:7)); %velocityProduct = C(q,dq)*dq
+
+% Robust Inv. Dyn.
+ % Run P_calculate.m once before using RID  
+  ro = 0.2;
+  epsilon = 0.02;
+  error = [qtilda; dqtilda];
+  B = [zeros(7,7); eye(7,7)];
+  BPe = B'*P*error;
+  normBPe = norm(BPe);
+
+  if normBPe > epsilon
+    da = -ro.*BPe/normBPe;
+  else
+    da = -ro/ epsilon * BPe;
+  end
+  aq =ddqd+ KP*qtilda + KD*dqtilda + da ;
+  u = robot.massMatrix(x(1:7))*aq+ robot.velocityProduct(x(1:7),x(8:14)) + robot.gravityTorque(x(1:7)); 
 
 dx = zeros(14,1);
 dx(1) = x(8);
