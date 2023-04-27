@@ -1,4 +1,6 @@
-%Position control with PD,Inverse dynamic, Robust controller
+%Position control of KUKA LBR iiwa R14 with PD,Inverse dynamic, Robust
+%controller and Passivity-based controller
+
 %First, run loadRobotmodel1.m to initiate robot model.
 
 close all
@@ -84,8 +86,18 @@ dqtilda = dqd - x(8:14);
   else
     da = -ro/ epsilon * BPe;
   end
-  aq =ddqd+ KP*qtilda + KD*dqtilda + da ;
+  aq = ddqd+ KP*qtilda + KD*dqtilda + da ;
   u = robot.massMatrix(x(1:7))*aq+ robot.velocityProduct(x(1:7),x(8:14)) + robot.gravityTorque(x(1:7)); 
+
+% Passivity-based controller-----------
+%  landa = eye(7,7).* 10;
+%  K = KP;
+%  v = dqd-landa*qtilda;
+%  a = ddqd - landa*dqtilda;
+%  r = dqtilda + landa*qtilda;
+%  % note that velocityProduct = C(q,dq)*dq so, C = C(q,dq)*dq*pinv(dq). It
+%  % works but not recomended. Also takes a long time for ODE to solve.
+%  u = robot.massMatrix(x(1:7))*a + robot.velocityProduct(x(1:7),x(8:14))*pinv(x(8:14))*v + robot.gravityTorque(x(1:7)) + K*r; 
 
 dx = zeros(14,1);
 dx(1) = x(8);

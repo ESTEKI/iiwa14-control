@@ -1,5 +1,8 @@
 % % S. Esteki:
 % This program connects to 'LBRiiwa14_TorqueCtrlMode.ttt' Copelliasim model
+% To test control methods:
+% PD , Inverse Dynamic, Robust Inverse Dynamic and Passivity-based control
+
 % Run 'loadRobotmodel1.m' first
 
 % using the remote API synchronous mode. The synchronous mode needs to be
@@ -109,14 +112,14 @@ tf = 2; %final time
             %qdesired = [0.0 ;20.0; 0 ;-110.0; 0 ;-40.0; 90.0;]*pi/180;
             qtilda = qd - lbrJointPosition;
             dqtilda = dqd - lbrJointVelocity;
-            %PD controller
+            %PD controller-----------------
              %u = KP*qtilda - KD*lbrJointVelocity + lbr14.gravityTorque(lbrJointPosition);
 
-            % Inv. Dyn. controller
+            % Inv. Dyn. controller---------
              %aq =ddqd + KP*qtilda + KD*dqtilda ;
              %u = lbr14.massMatrix(lbrJointPosition)*aq+ lbr14.velocityProduct(lbrJointPosition,lbrJointVelocity) + lbr14.gravityTorque(lbrJointPosition); %velocityProduct = C(q,dq)*dq
             
-            % Robust Inv. Dyn.
+            % Robust Inv. Dyn.-------------
              % Run P_calculate.m once before using RID  
               ro = 0.2;
               epsilon = 0.02;
@@ -131,6 +134,16 @@ tf = 2; %final time
               end
               aq =ddqd+ KP*qtilda + KD*dqtilda + da ;
               u = lbr14.massMatrix(lbrJointPosition)*aq+ lbr14.velocityProduct(lbrJointPosition,lbrJointVelocity) + lbr14.gravityTorque(lbrJointPosition); 
+            
+           % Passivity-based controller---------------------   
+%              landa = eye(7,7).* 10;
+%              K = KP;
+%              v = dqd-landa*qtilda;
+%              a = ddqd - landa*dqtilda;
+%              r = dqtilda + landa*qtilda;
+%              % note that velocityProduct = C(q,dq)*dq so, C = C(q,dq)*dq*pinv(dq). It
+%              % works but not recomended. 
+%              u = lbr14.massMatrix(lbrJointPosition)*a + lbr14.velocityProduct(lbrJointPosition,lbrJointVelocity)*pinv(lbrJointVelocity)*v + lbr14.gravityTorque(lbrJointPosition) + K*r; 
 
           q(:,step) = lbrJointPosition;
           dq(:,step) = lbrJointVelocity;

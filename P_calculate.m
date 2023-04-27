@@ -1,7 +1,9 @@
 % Calculatin the P matrix in A'P+PA = -Q for Robust Inverse Dynamic
 
 P_sym= sym("p",[14,14]);
-P_sym = tril(P_sym,0) + tril(P_sym,-1).';
+P_sym = tril(P_sym,0) + tril(P_sym,-1).';% Sym. matrix
+KP = eye(7,7)*100;
+KD = eye(7,7) *50;
 A = [zeros(7,7) eye(7,7) ; -KP -KD];
 B = [zeros(7,7); eye(7,7)] ;
 AP = A'*P_sym+P_sym*A ;
