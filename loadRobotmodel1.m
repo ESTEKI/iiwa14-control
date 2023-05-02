@@ -101,6 +101,7 @@ startConfiguration = [0; 30*pi/180.0; 0; 45*pi/180.0; 0 ;0 ;0];
 links{1,3}.Joint.HomePosition = startConfiguration(2);
 links{1,5}.Joint.HomePosition = startConfiguration(4);
 lbr14.gravityTorque()
+lbr14.geometricJacobian()
 %%
 for nj = 2:8
 jointPosLimits(nj-1,:) = links{1,nj}.Joint.PositionLimits;
