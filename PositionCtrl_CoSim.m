@@ -170,7 +170,7 @@ tf = 2; %final time
             cprintf('Error','Error in main loop: %s \r\n', ME.message);%better not to use cprintf anymore!
             pause(0.1);
         end
-            pause(10);
+            pause(3);
 
         % stop the simulation:
         sim.simxStopSimulation(clientID,sim.simx_opmode_blocking);

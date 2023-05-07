@@ -1,6 +1,9 @@
 %Position control of 2-link planar manipulator with PD,Inverse dynamic,
-%Robust Inv. Dyn.,Adaptive ID, Passivity-based, Adaptive Passivity-based controller
+%Robust Inv. Dyn.,Adaptive ID, Passivity-based, Robust Passivity-based controller
 
+% To test one controller, comment out others control input 'u' calculation
+% or the whole controller. So, the last uncommented u is the input to
+% simulation (currently, RPBC).
 close all
 
 %% Trajectory in joint space.
@@ -32,6 +35,7 @@ title('Desired Trajectory for each joint');
 hold off
 figure;
 %% ODE simulation
+
 x0 = [q0;dq];
 KD = eye(2,2)*10;
 KP = eye(2,2) *40;
@@ -58,7 +62,7 @@ I2=2;
 
 
 KD = eye(2,2)*10;
-KP = eye(2,2) *40;
+KP = eye(2,2) *100;
 
 timeIndex = uint16(ceil(t*100))+1;
 % qdesired dqdesired ...
@@ -71,6 +75,8 @@ dqtilda = dqd - x(3:4);
 
 dx(1) = x(3);
 dx(2) = x(4);
+
+
 d11 = (m1*lc1^2+m2*(l1^2+l2^2+2*l1*lc2*cos(x(2)))+I1+I2);
 d12=(m2*(lc2^2+l1*lc2*cos(x(2)))+I2);
 d21=d12;
@@ -82,15 +88,14 @@ M = [d11 d12; d21 d22];
 C = [h*x(2) h*x(2)+h*x(1);-h*x(1) 0];
 G = [g1;g2];
 
-%--PD--- 
+%--PD--------------------------
 %u = KP*qtilda - KD*x(3:4) + G; %PD controller
 
-%Inv Dyn
+%Inv Dyn ---------------------------------
  aq = ddqd + KP*qtilda + KD*dqtilda ;
  u = M*aq+ C*x(3:4) + G; %velocityProduct = C(q,dq)*dq
 
-% Robust Inv. Dyn.
-  
+% Robust Inv. Dyn. -------------
   ro = 0.2;
   epsilon = 0.02;
   error = [qtilda; dqtilda];
@@ -104,23 +109,90 @@ G = [g1;g2];
     da = -ro/ epsilon * BPe;
   end
   aq = ddqd+ KP*qtilda + KD*dqtilda + da ;
-  u = M*aq+ C*x(3:4) + G; 
+  
+  m1 = 0.8;
+  m2=0.8;
+  l1=0.8;
+  l2=0.8;
+  lc1=0.4;
+  lc2=0.4;
+  I1=2;
+  I2=2;
+
+  d11 = (m1*lc1^2+m2*(l1^2+l2^2+2*l1*lc2*cos(x(2)))+I1+I2);
+  d12=(m2*(lc2^2+l1*lc2*cos(x(2)))+I2);
+  d21=d12;
+  d22=(m2*l1*lc2^2+I2);
+  h = -(m2*l1*lc2*sin(x(2)));
+  g1=(m1*lc1+m2*l1)*g*cos(x(1))+m2*lc2*g*cos(x(1)+x(2));
+  g2= m2*lc2*g*cos(x(1)+x(2));
+  Mh = [d11 d12; d21 d22];
+  Ch = [h*x(2) h*x(2)+h*x(1);-h*x(1) 0];
+  Gh = [g1;g2];
+  u = Mh*aq+ Ch*x(3:4) + Gh;
+
+
+
+% Adaptive Inverse Dynamic---------------------
+ gama = eye(4,4)*1;
+ persistent dx_p;
+ if (isempty(dx_p))
+     dx_p = dx;
+ end
+ 
+ teta0 = [m1*lc1^2+m2*(l1^2+lc2^2)+I1+I2; m2*l1*lc2; m2*lc2^2+I2; m1*lc1+m2*l1; m2*l2];
+ Y = [dx_p(3) cos(x(2))*(2*dx_p(1)+dx_p(2))-sin(x(2))*(x(3)^2+2*x(3)*x(4)) dx_p(4) g*cos(x(1))  g*cos(x(1)+x(2));
+     0 cos(x(2))*dx_p(3)+sin(x(2))*x(3)^2 dx_p(3)+dx_p(4) 0 g*cos(x(1)+x(2))]; %using dx_p as the previus step acceleration
+ 
+ phi = inv(Mh)* Y;
+
+ persistent t0; % we need time step of ode45 to calculate theta hat dot
+ persistent theta_hat;
+ persistent theta_dot_old;
+
+ if (isempty(t0))
+    t0 = 0;
+ end
+ if (isempty(theta_hat))
+    theta_hat = zeros (5,1);
+ end
+ if (isempty(theta_dot_old))
+    theta_dot_old = zeros (5,1);
+ end
+ dt = t - t0;
+ t0 =t;
+ theta_dot = phi'*B'*P2link*error;
+ theta_hat = theta_hat + (dt/2)* (theta_dot + theta_dot_old);%Integrator -inv(gama)*
+ theta_dot_old = theta_dot;
+aq = ddqd + KP*qtilda + KD*dqtilda;
+u = Mh*aq+ Ch*x(3:4) + Gh + inv(Mh)*Y*(teta0-theta_hat);
+
 
 % Passivity-based controller-----------
-%  landa = eye(7,7).* 10;
-%  K = KP;
-%  v = dqd-landa*qtilda;
-%  a = ddqd - landa*dqtilda;
-%  r = dqtilda + landa*qtilda;
-%  % note that velocityProduct = C(q,dq)*dq so, C = C(q,dq)*dq*pinv(dq). It
-%  % works but not recomended. Also takes a long time for ODE to solve.
-%  u = robot.massMatrix(x(1:7))*a + robot.velocityProduct(x(1:7),x(8:14))*pinv(x(8:14))*v + robot.gravityTorque(x(1:7)) + K*r; 
+ landa = eye(2,2).* 10;
+ K = KP;
+ v = dqd-landa*qtilda;
+ a = ddqd - landa*dqtilda;
+ r = dqtilda + landa*qtilda;
+%  u = M*a + C*v + G + K*r; 
 
- 
+% Passivity-based Robust controller-----------
+ %Parameters for Theta matrix
 
+Y = [a(1) cos(x(2))*(2*a(1)+a(2))-sin(x(2))*(v(1)^2+2*v(1)*v(2)) a(2) g*cos(x(1))  g*cos(x(1)+x(2));
+    0 cos(x(2))*a(1)+sin(x(2))*v(1)^2 a(1)+a(2) 0 g*cos(x(1)+x(2))];
 
+teta0 = [m1*lc1^2+m2*(l1^2+lc2^2)+I1+I2; m2*l1*lc2; m2*lc2^2+I2; m1*lc1+m2*l1; m2*l2];
+  Ytr = Y'*r;
+  normYtr = norm(Ytr);
 
-    
+  if normYtr > epsilon
+    dtheta = -ro*(Ytr/normBPe);
+  else
+    dtheta = -(ro/ epsilon) * Ytr;
+  end
+  %u = Y*(teta0 + dtheta)-K*r; %PBRC
+
 
 
 dx(3:4) = inv(M)*(u-C*x(3:4)-G);
