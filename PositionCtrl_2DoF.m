@@ -134,7 +134,7 @@ G = [g1;g2];
 
 
 % Adaptive Inverse Dynamic---------------------
- gama = eye(4,4)*1;
+ gama = eye(5,5)*50;
  persistent dx_p;
  if (isempty(dx_p))
      dx_p = dx;
@@ -161,7 +161,7 @@ G = [g1;g2];
  end
  dt = t - t0;
  t0 =t;
- theta_dot = phi'*B'*P2link*error;
+ theta_dot = -inv(gama)*phi'*B'*P2link*error;
  theta_hat = theta_hat + (dt/2)* (theta_dot + theta_dot_old);%Integrator -inv(gama)*
  theta_dot_old = theta_dot;
 aq = ddqd + KP*qtilda + KD*dqtilda;
@@ -193,8 +193,22 @@ teta0 = [m1*lc1^2+m2*(l1^2+lc2^2)+I1+I2; m2*l1*lc2; m2*lc2^2+I2; m1*lc1+m2*l1; m
   end
   %u = Y*(teta0 + dtheta)-K*r; %PBRC
 
-
+% Passivity-based Adaptive controller-----------
+ persistent theta_hat2;
+ persistent theta_dot_old2; 
+ 
+ if (isempty(theta_hat2))
+    theta_hat2 = zeros (5,1);
+ end
+ if (isempty(theta_dot_old2))
+    theta_dot_old2 = zeros (5,1);
+ end
+ 
+ theta_hat_dot2 = -inv(gama)*Y'*r;
+ theta_hat2 = theta_hat2 + (dt/2)* (theta_hat_dot2 + theta_dot_old2);%Integrator 
+ theta_dot_old2 = theta_hat_dot2;
+  u = Y*(theta_hat2)+K*r; %PBAC
 
 dx(3:4) = inv(M)*(u-C*x(3:4)-G);
-
+dx_p = dx;
 end
