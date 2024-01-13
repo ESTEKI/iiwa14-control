@@ -14,4 +14,4 @@ Refer to "Robot Modeling and Control", 2nd Edition by M. W. SPONG.
 3) PositionCtrl_CoSim.m
  Here, matlab is connected to CoppelliaSim. In CopelliaSim, robot is controlled in joint torque mode and control input 'u' is calculated in matlab and will be send to simulation at each time step.
  
- Rec 003.mp4 is a demo video file
+The video of the running simulation is available at https://youtu.be/nfEmEyz_94s 
